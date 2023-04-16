@@ -107,6 +107,7 @@ def main() -> None:
             ModelsWrapper.aid,
             ModelsWrapper.world_strat,
             ModelsWrapper.skin_cancer,
+            ModelsWrapper.cbis,
         ],
         default="mnist",
         dest="ft_extractor",

@@ -5,4 +5,5 @@ from .dataset import (
     RESISC45Dataset,
     SkinCancerDataset,
     WorldStratDataset,
+	CBISDataset
 )

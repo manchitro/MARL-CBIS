@@ -1,5 +1,6 @@
 import pickle as pkl
 from os.path import exists, isdir, join
+from os import listdir
 from typing import Any, Dict, Tuple
 
 import pandas as pd
@@ -8,6 +9,7 @@ import torch.nn.functional as fun
 import tqdm
 from PIL import Image
 from torch.utils.data import Dataset
+import torchvision.transforms as tr
 from torchvision.datasets import ImageFolder
 
 
@@ -226,3 +228,248 @@ class SkinCancerDataset(ImageFolder):
             loader=my_pil_loader,
             is_valid_file=None,
         )
+
+
+class CBISDataset(Dataset):
+    def __init__(self, resource_path: str, img_transform: Any, dataset_to_train: str = "mass"):
+        super().__init__()
+
+        self.__cbis_root_path = join(resource_path, "downloaded", "cbis")
+
+        # get csv files
+        self.dicom_info_csv = pd.read_csv(
+            join(self.__cbis_root_path, "csv", "dicom_info.csv"), sep=","
+        )
+        self.mass_train_csv = pd.read_csv(
+            join(self.__cbis_root_path, "csv", "mass_case_description_train_set.csv"), sep=","
+        )
+        self.mass_test_csv = pd.read_csv(
+            join(self.__cbis_root_path, "csv", "mass_case_description_test_set.csv"), sep=","
+        )
+        self.calc_train_csv = pd.read_csv(
+            join(self.__cbis_root_path, "csv", "calc_case_description_train_set.csv"), sep=","
+        )
+        self.calc_test_csv = pd.read_csv(
+            join(self.__cbis_root_path, "csv", "calc_case_description_test_set.csv"), sep=","
+        )
+
+        tqdm.tqdm.pandas()
+
+        # read mass train dataset
+        self.mass_dataset_train = [
+            (str(path), label)
+            for path, label in zip(
+                self.mass_train_csv["cropped image file path"].tolist(),
+                self.mass_train_csv["pathology"].tolist()
+            )
+        ]
+
+        # add mass to label
+        for i in range(len(self.mass_dataset_train)):
+            path = self.mass_dataset_train[i][0]
+            label = self.mass_dataset_train[i][1]
+            new_tuple = (path, "MASS_" + label)
+            self.mass_dataset_train[i] = new_tuple
+
+            # read mass test dataset
+        self.mass_dataset_test = [
+            (str(path), label)
+            for path, label in zip(
+                self.mass_test_csv["cropped image file path"].tolist(),
+                self.mass_test_csv["pathology"].tolist()
+            )
+        ]
+
+        # add mass to label
+        for i in range(len(self.mass_dataset_test)):
+            path = self.mass_dataset_test[i][0]
+            label = self.mass_dataset_test[i][1]
+            new_tuple = (path, "MASS_" + label)
+            self.mass_dataset_test[i] = new_tuple
+
+            # read calc train dataset
+        self.calc_dataset_train = [
+            (str(path), label)
+            for path, label in zip(
+                self.calc_train_csv["cropped image file path"].tolist(),
+                self.calc_train_csv["pathology"].tolist()
+            )
+        ]
+
+        # add calc to label
+        for i in range(len(self.calc_dataset_train)):
+            path = self.calc_dataset_train[i][0]
+            label = self.calc_dataset_train[i][1]
+            new_tuple = (path, "CALC_" + label)
+            self.calc_dataset_train[i] = new_tuple
+
+            # read calc test dataset
+        self.calc_dataset_test = [
+            (str(path), label)
+            for path, label in zip(
+                self.calc_test_csv["cropped image file path"].tolist(),
+                self.calc_test_csv["pathology"].tolist()
+            )
+        ]
+
+        # add calc to label
+        for i in range(len(self.calc_dataset_test)):
+            path = self.calc_dataset_test[i][0]
+            label = self.calc_dataset_test[i][1]
+            new_tuple = (path, "CALC_" + label)
+            self.calc_dataset_test[i] = new_tuple
+
+		# combine train and test datasets
+        self.dataset_train = self.mass_dataset_train + self.calc_dataset_train
+        self.dataset_test = self.mass_dataset_test + self.calc_dataset_test
+
+        print("train dataset length: ",  len(self.dataset_train))
+        print("test dataset length: ",  len(self.dataset_test))
+
+        # augmented datasets
+        self.augments = ["original"]
+        # self.augments = ["original", "h_flip", "v_flip", "90", "180", "270", "h_flip_90", "v_flip_90", "h_flip_180", "v_flip_180", "h_flip_270", "v_flip_270"]
+        self.augments_indices = []
+        self.aug_dataset_train = []
+
+        i = 0
+        j = 0
+        for augment in self.augments:
+            self.aug_dataset_train = self.aug_dataset_train + self.dataset_train
+            j = len(self.aug_dataset_train)
+            self.augments_indices.append([i, j])
+            i = j + 1
+
+        for i in range(len(self.augments)):
+            print(self.augments[i], self.augments_indices[i])
+        print("augmented training dataset length: ",
+              len(self.aug_dataset_train))
+
+        self.__dataset = self.aug_dataset_train
+
+        self.class_to_idx = {
+            "mass_benign": 0,
+            "mass_malignant": 1,
+            "calc_benign": 2,
+            "calc_malignant": 3,
+        }
+
+    def getCroppedImagePathFromCSVPath(self, path: str):
+        components = path.split('/')
+        folder_name = components[2]
+        images = listdir(join(self.__cbis_root_path, "jpeg", folder_name))
+
+        for image in images:
+            index = self.dicom_info_csv.index[self.dicom_info_csv['image_path'].str.contains(
+                folder_name+'/'+image)][0]
+            if self.dicom_info_csv['SeriesDescription'][index] == 'cropped images':
+                image_path = join('jpeg', folder_name, image)
+                return image_path
+
+    def cbis_pil_loader(self, path: str) -> Image.Image:
+        f = open(path, 'rb')
+        img = Image.open(f)
+        resized_img = img.resize((200, 200))
+        f.close()
+        return resized_img
+
+    def __open_img(self, path: str, index: int) -> th.Tensor:
+        file = self.cbis_pil_loader(
+            join(self.__cbis_root_path, self.getCroppedImagePathFromCSVPath(path)))
+
+        transforms = tr.ToTensor()
+
+        augment = "original"
+        for i in range(len(self.augments_indices)):
+            if self.augments_indices[i][0] <= index <= self.augments_indices[i][1]:
+                augment = self.augments[i]
+
+        if augment == "original":
+            transforms = tr.Compose([
+                tr.ToTensor()
+            ])
+        if augment == "h_flip":
+            transforms = tr.Compose([
+                tr.RandomHorizontalFlip(p=1),
+                tr.ToTensor()
+            ])
+        if augment == "v_flip":
+            transforms = tr.Compose([
+                tr.RandomVerticalFlip(p=1),
+                tr.ToTensor()
+            ])
+        if augment == "90":
+            transforms = tr.Compose([
+                tr.RandomRotation(degrees=(90, 90)),
+                tr.ToTensor()
+            ])
+        if augment == "180":
+            transforms = tr.Compose([
+                tr.RandomRotation(degrees=(180, 180)),
+                tr.ToTensor()
+            ])
+        if augment == "270":
+            transforms = tr.Compose([
+                tr.RandomRotation(degrees=(270, 270)),
+                tr.ToTensor()
+            ])
+        if augment == "h_flip_90":
+            transforms = tr.Compose([
+                tr.RandomHorizontalFlip(p=1),
+                tr.RandomRotation(degrees=(90, 90)),
+                tr.ToTensor()
+            ])
+        if augment == "h_flip_180":
+            transforms = tr.Compose([
+                tr.RandomHorizontalFlip(p=1),
+                tr.RandomRotation(degrees=(180, 180)),
+                tr.ToTensor()
+            ])
+        if augment == "h_flip_270":
+            transforms = tr.Compose([
+                tr.RandomHorizontalFlip(p=1),
+                tr.RandomRotation(degrees=(270, 270)),
+                tr.ToTensor()
+            ])
+        if augment == "v_flip_90":
+            transforms = tr.Compose([
+                tr.RandomVerticalFlip(p=1),
+                tr.RandomRotation(degrees=(90, 90)),
+                tr.ToTensor()
+            ])
+        if augment == "v_flip_180":
+            transforms = tr.Compose([
+                tr.RandomVerticalFlip(p=1),
+                tr.RandomRotation(degrees=(180, 180)),
+                tr.ToTensor()
+            ])
+        if augment == "v_flip_270":
+            transforms = tr.Compose([
+                tr.RandomVerticalFlip(p=1),
+                tr.RandomRotation(degrees=(270, 270)),
+                tr.ToTensor()
+            ])
+
+        augmented_image = transforms(file)
+
+        return augmented_image
+
+    def __getitem__(self, index) -> Tuple[th.Tensor, th.Tensor]:
+        img_path_csv = self.__dataset[index][0]
+
+        label = self.__dataset[index][1]
+        label_to_index = 0
+        if label.startswith('MASS_BENIGN'):
+            label_to_index = 0
+        elif label.startswith('MASS_MALIGNANT'):
+            label_to_index = 1
+        if label.startswith('CALC_BENIGN'):
+            label_to_index = 2
+        elif label.startswith('CALC_MALIGNANT'):
+            label_to_index = 3
+        img = self.__open_img(img_path_csv, index)
+
+        return img, th.tensor(label_to_index)
+
+    def __len__(self) -> int:
+        return len(self.__dataset)

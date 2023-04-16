@@ -27,6 +27,7 @@ def visualize_steps(
     agents: MultiAgent,
     img: th.Tensor,
     img_ori: th.Tensor,
+	label_ori: th.Tensor,
     max_it: int,
     f: int,
     output_dir: str,
@@ -62,7 +63,7 @@ def visualize_steps(
 
     fig = plt.figure()
     plt.imshow(img_ori, cmap=color_map)
-    plt.title("Original")
+    plt.title("Original - " + idx_to_class[int(label_ori)])
     frame_file_name = join(output_dir, f"pred_original.png")
     plt.savefig(frame_file_name)
     plt.close(fig)

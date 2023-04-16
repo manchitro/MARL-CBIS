@@ -20,6 +20,7 @@ from .data import (
     RESISC45Dataset,
     SkinCancerDataset,
     WorldStratDataset,
+    CBISDataset
 )
 from .environment import (
     MultiAgent,
@@ -72,6 +73,7 @@ def train(main_options: MainOptions, train_options: TrainOptions) -> None:
         ModelsWrapper.aid: AIDDataset,
         ModelsWrapper.world_strat: WorldStratDataset,
         ModelsWrapper.skin_cancer: SkinCancerDataset,
+        ModelsWrapper.cbis: CBISDataset,
     }
 
     dataset_constructor = dataset_constructors[train_options.ft_extr_str]
@@ -410,6 +412,7 @@ def train(main_options: MainOptions, train_options: TrainOptions) -> None:
         marl_m,
         test_dataset[test_idx][0],
         test_dataset_ori[test_idx][0],
+        test_dataset_ori[test_idx][1],
         main_options.step,
         train_options.window_size,
         output_dir,
