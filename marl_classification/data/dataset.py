@@ -467,14 +467,10 @@ class CBISDataset(Dataset):
 
         label = self.__dataset[index][1]
         label_to_index = 0
-        if label.startswith('MASS_BENIGN'):
+        if label.startswith('BENIGN'):
             label_to_index = 0
-        elif label.startswith('MASS_MALIGNANT'):
+        elif label.startswith('MALIGNANT'):
             label_to_index = 1
-        if label.startswith('CALC_BENIGN'):
-            label_to_index = 2
-        elif label.startswith('CALC_MALIGNANT'):
-            label_to_index = 3
         img = self.__open_img(img_path_csv, index)
 
         return img, th.tensor(label_to_index)
