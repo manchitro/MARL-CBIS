@@ -3,9 +3,10 @@ from typing import cast
 
 import torch as th
 import torch.nn as nn
-from torchvision.ops import Permute
+from .utils import Permute
 
 from torchvision.models import resnet18, ResNet18_Weights
+from torchsummary import summary
 
 
 class CNNFtExtract(nn.Module, ABC):
@@ -229,6 +230,16 @@ class CbisCnn(CNNFtExtract):
     def __init__(self, f: int) -> None:
         super().__init__()
 
+        self.__out_size = 128 * (f // 16) ** 2
+
+        self.model = resnet18(weights=ResNet18_Weights.DEFAULT)
+        self.model.conv1 = nn.Conv2d(1, 64, (7, 7), (2, 2), (3, 3), bias=False)
+        inf = self.model.fc.in_features
+        self.model.fc = nn.Linear(inf, self.__out_size)
+        self.model.to(th.device('cuda'))
+
+        # summary(self.model, (1, 200, 200))
+
         self.__seq_conv = nn.Sequential(
             nn.Conv2d(1, 16, (3, 3), padding=1),
             nn.GELU(),
@@ -248,8 +259,6 @@ class CbisCnn(CNNFtExtract):
             nn.BatchNorm2d(128),
             nn.Flatten(1, -1),
         )
-
-        self.__out_size = 128 * (f // 16) ** 2
 
     @property
     def out_size(self) -> int:

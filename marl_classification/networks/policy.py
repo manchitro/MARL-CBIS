@@ -2,7 +2,7 @@ from typing import cast
 
 import torch as th
 import torch.nn as nn
-from torchvision.ops import Permute
+from .utils import Permute
 
 
 class Policy(nn.Module):
