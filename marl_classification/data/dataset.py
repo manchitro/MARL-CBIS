@@ -264,14 +264,14 @@ class CBISDataset(Dataset):
             )
         ]
 
-        # add mass to label
-        for i in range(len(self.mass_dataset_train)):
-            path = self.mass_dataset_train[i][0]
-            label = self.mass_dataset_train[i][1]
-            new_tuple = (path, "MASS_" + label)
-            self.mass_dataset_train[i] = new_tuple
+        # # add mass to label
+        # for i in range(len(self.mass_dataset_train)):
+        #     path = self.mass_dataset_train[i][0]
+        #     label = self.mass_dataset_train[i][1]
+        #     new_tuple = (path, "MASS_" + label)
+        #     self.mass_dataset_train[i] = new_tuple
 
-            # read mass test dataset
+		# read mass test dataset
         self.mass_dataset_test = [
             (str(path), label)
             for path, label in zip(
@@ -280,14 +280,14 @@ class CBISDataset(Dataset):
             )
         ]
 
-        # add mass to label
-        for i in range(len(self.mass_dataset_test)):
-            path = self.mass_dataset_test[i][0]
-            label = self.mass_dataset_test[i][1]
-            new_tuple = (path, "MASS_" + label)
-            self.mass_dataset_test[i] = new_tuple
+        # # add mass to label
+        # for i in range(len(self.mass_dataset_test)):
+        #     path = self.mass_dataset_test[i][0]
+        #     label = self.mass_dataset_test[i][1]
+        #     new_tuple = (path, "MASS_" + label)
+        #     self.mass_dataset_test[i] = new_tuple
 
-            # read calc train dataset
+		# read calc train dataset
         self.calc_dataset_train = [
             (str(path), label)
             for path, label in zip(
@@ -296,14 +296,14 @@ class CBISDataset(Dataset):
             )
         ]
 
-        # add calc to label
-        for i in range(len(self.calc_dataset_train)):
-            path = self.calc_dataset_train[i][0]
-            label = self.calc_dataset_train[i][1]
-            new_tuple = (path, "CALC_" + label)
-            self.calc_dataset_train[i] = new_tuple
+        # # add calc to label
+        # for i in range(len(self.calc_dataset_train)):
+        #     path = self.calc_dataset_train[i][0]
+        #     label = self.calc_dataset_train[i][1]
+        #     new_tuple = (path, "CALC_" + label)
+        #     self.calc_dataset_train[i] = new_tuple
 
-            # read calc test dataset
+		# read calc test dataset
         self.calc_dataset_test = [
             (str(path), label)
             for path, label in zip(
@@ -312,23 +312,33 @@ class CBISDataset(Dataset):
             )
         ]
 
-        # add calc to label
-        for i in range(len(self.calc_dataset_test)):
-            path = self.calc_dataset_test[i][0]
-            label = self.calc_dataset_test[i][1]
-            new_tuple = (path, "CALC_" + label)
-            self.calc_dataset_test[i] = new_tuple
+        # # add calc to label
+        # for i in range(len(self.calc_dataset_test)):
+        #     path = self.calc_dataset_test[i][0]
+        #     label = self.calc_dataset_test[i][1]
+        #     new_tuple = (path, "CALC_" + label)
+        #     self.calc_dataset_test[i] = new_tuple
 
 		# combine train and test datasets
-        self.dataset_train = self.mass_dataset_train + self.calc_dataset_train
-        self.dataset_test = self.mass_dataset_test + self.calc_dataset_test
+
+		# mass only
+        self.dataset_train = self.mass_dataset_train 
+        self.dataset_test = self.mass_dataset_test
+
+		# calc only
+        # self.dataset_train = self.calc_dataset_train 
+        # self.dataset_test = self.calc_dataset_test
 
         print("train dataset length: ",  len(self.dataset_train))
         print("test dataset length: ",  len(self.dataset_test))
 
         # augmented datasets
-        self.augments = ["original"]
-        # self.augments = ["original", "h_flip", "v_flip", "90", "180", "270", "h_flip_90", "v_flip_90", "h_flip_180", "v_flip_180", "h_flip_270", "v_flip_270"]
+
+		#originals only
+        # self.augments = ["original"]
+		
+		# with augments
+        self.augments = ["original", "h_flip", "v_flip", "90", "180", "270", "h_flip_90", "v_flip_90", "h_flip_180", "v_flip_180", "h_flip_270", "v_flip_270"]
         self.augments_indices = []
         self.aug_dataset_train = []
 
@@ -348,10 +358,8 @@ class CBISDataset(Dataset):
         self.__dataset = self.aug_dataset_train
 
         self.class_to_idx = {
-            "mass_benign": 0,
-            "mass_malignant": 1,
-            "calc_benign": 2,
-            "calc_malignant": 3,
+            "benign": 0,
+            "malignant": 1,
         }
 
     def getCroppedImagePathFromCSVPath(self, path: str):
@@ -369,7 +377,7 @@ class CBISDataset(Dataset):
     def cbis_pil_loader(self, path: str) -> Image.Image:
         f = open(path, 'rb')
         img = Image.open(f)
-        resized_img = img.resize((200, 200))
+        resized_img = img.resize((224, 224))
         f.close()
         return resized_img
 
