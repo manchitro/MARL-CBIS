@@ -6,7 +6,6 @@ import torch.nn as nn
 from .utils import Permute
 
 from torchvision.models import resnet18, ResNet18_Weights
-from torchvision.models import mobilenet_v3_large, MobileNet_V3_Large_Weights
 from torchsummary import summary
 
 
@@ -234,17 +233,18 @@ class CbisCnn(CNNFtExtract):
         self.__out_size = 128 * (f // 16) ** 2
 
         # resnet18
-        self.model = resnet18(weights=ResNet18_Weights.DEFAULT)
-        self.model.conv1 = nn.Conv2d(1, 64, (7, 7), (2, 2), (3, 3), bias=False)
-        inf = self.model.fc.in_features
-        self.model.fc = nn.Linear(inf, self.__out_size)
+        self.model = ModifiedResNet18()
+        # self.model = resnet18(weights=ResNet18_Weights)
+        # self.model.conv1 = nn.Conv2d(1, 64, (7, 7), (2, 2), (3, 3), bias=False)
+        # inf = self.model.fc.in_features
+        # self.model.fc = nn.Linear(inf, self.__out_size)
         self.model.to(th.device('cuda'))
 
         # mobilenetV3 large
         # self.model = mobilenet_v3_large(weights=MobileNet_V3_Large_Weights.DEFAULT)
         # self.model.to(th.device('cuda'))
 
-        # summary(self.model, (3, f, f))
+        summary(self.model, (1, f, f))
 
         self.__seq_conv = nn.Sequential(
             nn.Conv2d(1, 16, (3, 3), padding=1),
@@ -272,11 +272,7 @@ class CbisCnn(CNNFtExtract):
 
     def forward(self, o_t: th.Tensor) -> th.Tensor:
         out: th.Tensor = self.model(o_t)
-        # return out
-        max_val = out.max()
-        min_val = out.min()
-        out = (out - min_val) / (max_val - min_val) * 2 - 1
-        return out * 5
+        return out
 
 
 ############################
@@ -303,3 +299,36 @@ class StateToFeatures(nn.Module):
 
     def forward(self, p_t: th.Tensor) -> th.Tensor:
         return cast(th.Tensor, self.__seq_lin(p_t))
+
+
+class ModifiedResNet18(nn.Module):
+    def __init__(self):
+        super(ModifiedResNet18, self).__init__()
+        # Change the input layer to accept a single-channel image of size 24x24
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=7,
+                               stride=2, padding=3, bias=False)
+        # Change the output layer to output a 1x128 tensor
+        self.fc = nn.Linear(512, 128)
+
+        # Load the pre-trained ResNet18 model
+        self.resnet18 = resnet18(weights=ResNet18_Weights.DEFAULT)
+
+        # Remove the last fully connected layer of the pre-trained model
+        del self.resnet18.fc
+
+        # Freeze all the parameters in the pre-trained model
+        for param in self.resnet18.parameters():
+            param.requires_grad = False
+
+    def forward(self, x):
+        # Pass the input through the modified input layer
+        x = self.conv1(x)
+        x = self.resnet18.layer1(x)
+        x = self.resnet18.layer2(x)
+        x = self.resnet18.layer3(x)
+        x = self.resnet18.layer4(x)
+        x = self.resnet18.avgpool(x)
+        x = th.flatten(x, 1)
+        # Pass the flattened output through the modified output layer
+        x = self.fc(x)
+        return x
