@@ -6,6 +6,7 @@ import torch.nn as nn
 from .utils import Permute
 
 from torchvision.models import resnet18, ResNet18_Weights
+from torchvision.models import mobilenet_v3_large, MobileNet_V3_Large_Weights
 from torchsummary import summary
 
 
@@ -232,13 +233,18 @@ class CbisCnn(CNNFtExtract):
 
         self.__out_size = 128 * (f // 16) ** 2
 
+        # resnet18
         self.model = resnet18(weights=ResNet18_Weights.DEFAULT)
         self.model.conv1 = nn.Conv2d(1, 64, (7, 7), (2, 2), (3, 3), bias=False)
         inf = self.model.fc.in_features
         self.model.fc = nn.Linear(inf, self.__out_size)
         self.model.to(th.device('cuda'))
 
-        # summary(self.model, (1, 200, 200))
+        # mobilenetV3 large
+        # self.model = mobilenet_v3_large(weights=MobileNet_V3_Large_Weights.DEFAULT)
+        # self.model.to(th.device('cuda'))
+
+        # summary(self.model, (3, f, f))
 
         self.__seq_conv = nn.Sequential(
             nn.Conv2d(1, 16, (3, 3), padding=1),
@@ -265,8 +271,12 @@ class CbisCnn(CNNFtExtract):
         return self.__out_size
 
     def forward(self, o_t: th.Tensor) -> th.Tensor:
-        out: th.Tensor = self.__seq_conv(o_t)
-        return out
+        out: th.Tensor = self.model(o_t)
+        # return out
+        max_val = out.max()
+        min_val = out.min()
+        out = (out - min_val) / (max_val - min_val) * 2 - 1
+        return out * 5
 
 
 ############################
