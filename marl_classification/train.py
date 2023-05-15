@@ -356,7 +356,7 @@ def train(main_options: MainOptions, train_options: TrainOptions) -> None:
         lines = train_live.readlines()
         final_line = lines[-1].strip()
         train_live.close()
-        train_live = open(join(output_dir, 'train_stdout_live.txt'), '2')
+        train_live = open(join(output_dir, 'train_stdout_live.txt'), 'w')
         train_live.truncate(0)
         train_live.close()
         train_stdout = open(join(output_dir, 'train_stdout.txt'), 'a')
