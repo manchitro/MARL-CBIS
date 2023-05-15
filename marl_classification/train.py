@@ -206,8 +206,8 @@ def train(main_options: MainOptions, train_options: TrainOptions) -> None:
     for e in range(train_options.nb_epoch):
         nn_models.train()
 
-        fh = open('train_stdout_live.txt', 'w')
-        tqdm_bar = tqdm(train_dataloader, file=fh)
+        train_live = open(join(output_dir, 'train_stdout_live.txt'), 'w')
+        tqdm_bar = tqdm(train_dataloader, file=train_live)
         for x_train, y_train in tqdm_bar:
             x_train, y_train = (
                 x_train.to(th.device(device_str)),
@@ -351,22 +351,22 @@ def train(main_options: MainOptions, train_options: TrainOptions) -> None:
 
             curr_step += 1
 
-        fh.close()
-        fh = open('train_stdout_live.txt', 'r')
-        lines = fh.readlines()
+        train_live.close()
+        train_live = open(join(output_dir, 'train_stdout_live.txt'), 'r')
+        lines = train_live.readlines()
         final_line = lines[-1].strip()
-        fh.close()
-        stdout = open('train_stdout.txt', 'a')
-        stdout.write('\n')
-        stdout.write(final_line)
-        stdout.close()
+        train_live.close()
+        train_stdout = open(join(output_dir, 'train_stdout.txt'), 'a')
+        train_stdout.write('\n')
+        train_stdout.write(final_line)
+        train_stdout.close()
 
         nn_models.eval()
         conf_meter_eval = ConfusionMeter(train_options.nb_class, None)
 
         with th.no_grad():
-            fh = open('test_stdout_live.txt', 'w')
-            tqdm_bar = tqdm(test_dataloader, file=fh)
+            test_live = open(join(output_dir, 'test_stdout_live.txt'), 'w')
+            tqdm_bar = tqdm(test_dataloader, file=test_live)
             for x_test, y_test in tqdm_bar:
                 x_test, y_test = (
                     x_test.to(th.device(device_str)),
@@ -390,15 +390,15 @@ def train(main_options: MainOptions, train_options: TrainOptions) -> None:
                     f"eval_rec = {recs.mean().item():.4f}"
                 )
 
-            fh.close()
-            fh = open('test_stdout_live.txt', 'r')
-            lines = fh.readlines()
+            test_live.close()
+            test_live = open(join(output_dir, 'test_stdout_live.txt'), 'r')
+            lines = test_live.readlines()
             final_line = lines[-1].strip()
-            fh.close()
-            stdout = open('test_stdout.txt', 'a')
-            stdout.write('\n')
-            stdout.write(final_line)
-            stdout.close()
+            test_live.close()
+            test_stdout = open(join(output_dir, 'test_stdout.txt'), 'a')
+            test_stdout.write('\n')
+            test_stdout.write(final_line)
+            test_stdout.close()
 
         # Compute score
         precs, recs = (
@@ -421,7 +421,7 @@ def train(main_options: MainOptions, train_options: TrainOptions) -> None:
             join(output_dir, model_dir, f"nn_models_epoch_{e}.pt"),
         )
 
-    fh.close()
+    train_live.close()
 
     dataset_tmp = dataset_constructor(
         train_options.resources_dir,
