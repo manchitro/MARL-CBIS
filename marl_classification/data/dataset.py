@@ -319,14 +319,36 @@ class CBISDataset(Dataset):
         #     new_tuple = (path, "CALC_" + label)
         #     self.calc_dataset_test[i] = new_tuple
 
-		# combine train and test datasets
+        # count benign and malignant images
+        train_benign_count = 0
+        train_malign_count = 0
+        for path, label in self.mass_dataset_train:
+            if label.startswith("BENIGN"):
+                train_benign_count += 1
 
-		# mass only
-        self.dataset_train = self.mass_dataset_train 
+            if label.startswith("MALIGN"):
+                    train_malign_count += 1
+
+        print(train_malign_count, train_benign_count )
+
+        test_benign_count = 0
+        test_malign_count = 0
+        for path, label in self.mass_dataset_test:
+            if label.startswith("BENIGN"):
+                test_benign_count += 1
+
+            if label.startswith("MALIGN"):
+                    test_malign_count += 1
+
+        print(test_malign_count, test_benign_count )
+        # combine train and test datasets
+
+        # mass only
+        self.dataset_train = self.mass_dataset_train
         self.dataset_test = self.mass_dataset_test
 
-		# calc only
-        # self.dataset_train = self.calc_dataset_train 
+        # calc only
+        # self.dataset_train = self.calc_dataset_train
         # self.dataset_test = self.calc_dataset_test
 
         print("train dataset length: ",  len(self.dataset_train))
@@ -334,11 +356,11 @@ class CBISDataset(Dataset):
 
         # augmented datasets
 
-		#originals only
-        # self.augments = ["original"]
-		
-		# with augments
-        self.augments = ["original", "h_flip", "v_flip", "90", "180", "270", "h_flip_90", "v_flip_90", "h_flip_180", "v_flip_180", "h_flip_270", "v_flip_270"]
+        # originals only
+        self.augments = ["original"]
+
+        # with augments
+        # self.augments = ["original", "h_flip", "v_flip", "90", "180", "270", "h_flip_90", "v_flip_90", "h_flip_180", "v_flip_180", "h_flip_270", "v_flip_270"]
         self.augments_indices = []
         self.aug_dataset_train = []
 
@@ -394,6 +416,7 @@ class CBISDataset(Dataset):
 
         if augment == "original":
             transforms = tr.Compose([
+                # tr.Grayscale(num_output_channels=3),
                 tr.ToTensor()
             ])
         if augment == "h_flip":

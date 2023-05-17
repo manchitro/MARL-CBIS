@@ -1,6 +1,7 @@
 # NNs stuff
 torch
 torchvision
+torchsummary
 
 # visu stuff
 tqdm

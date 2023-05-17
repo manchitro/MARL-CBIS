@@ -233,45 +233,50 @@ class CbisCnn(CNNFtExtract):
         self.__out_size = 128 * (f // 16) ** 2
 
         # resnet18
-        self.model = ModifiedResNet18()
-        # self.model = resnet18(weights=ResNet18_Weights)
+        # self.model = ModifiedResNet18()
+        # self.model = resnet18(weights=ResNet18_Weights.I)
         # self.model.conv1 = nn.Conv2d(1, 64, (7, 7), (2, 2), (3, 3), bias=False)
         # inf = self.model.fc.in_features
         # self.model.fc = nn.Linear(inf, self.__out_size)
-        self.model.to(th.device('cuda'))
+        # self.model.to(th.device('cuda'))
 
         # mobilenetV3 large
         # self.model = mobilenet_v3_large(weights=MobileNet_V3_Large_Weights.DEFAULT)
         # self.model.to(th.device('cuda'))
 
-        summary(self.model, (1, f, f))
+        # summary(self.model, (1, f, f))
 
         self.__seq_conv = nn.Sequential(
             nn.Conv2d(1, 16, (3, 3), padding=1),
             nn.GELU(),
             nn.MaxPool2d(2, 2),
             nn.BatchNorm2d(16),
+			nn.Dropout(0.2),
             nn.Conv2d(16, 32, (3, 3), padding=1),
             nn.GELU(),
             nn.MaxPool2d(2, 2),
             nn.BatchNorm2d(32),
+			nn.Dropout(0.2),
             nn.Conv2d(32, 64, (3, 3), padding=1),
             nn.GELU(),
             nn.MaxPool2d(2, 2),
             nn.BatchNorm2d(64),
+			nn.Dropout(0.2),
             nn.Conv2d(64, 128, (3, 3), padding=1),
             nn.GELU(),
             nn.MaxPool2d(2, 2),
             nn.BatchNorm2d(128),
+			nn.Dropout(0.2),
             nn.Flatten(1, -1),
         )
+
 
     @property
     def out_size(self) -> int:
         return self.__out_size
 
     def forward(self, o_t: th.Tensor) -> th.Tensor:
-        out: th.Tensor = self.model(o_t)
+        out: th.Tensor = self.__seq_conv(o_t)
         return out
 
 
