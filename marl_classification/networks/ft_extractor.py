@@ -6,7 +6,7 @@ import torch.nn as nn
 from .utils import Permute
 
 from torchvision.models import resnet18, ResNet18_Weights
-from torchsummary import summary
+# from torchsummary import summary
 
 
 class CNNFtExtract(nn.Module, ABC):
@@ -230,7 +230,7 @@ class CbisCnn(CNNFtExtract):
     def __init__(self, f: int) -> None:
         super().__init__()
 
-        self.__out_size = 128 * (f // 16) ** 2
+        self.__out_size = 32 * (f // 8) ** 2
 
         # resnet18
         # self.model = ModifiedResNet18()
@@ -247,7 +247,12 @@ class CbisCnn(CNNFtExtract):
         # summary(self.model, (1, f, f))
 
         self.__seq_conv = nn.Sequential(
-            nn.Conv2d(1, 16, (3, 3), padding=1),
+            nn.Conv2d(1, 8, (3, 3), padding=1),
+            nn.GELU(),
+            nn.MaxPool2d(2, 2),
+            nn.BatchNorm2d(8),
+			nn.Dropout(0.2),
+            nn.Conv2d(8, 16, (3, 3), padding=1),
             nn.GELU(),
             nn.MaxPool2d(2, 2),
             nn.BatchNorm2d(16),
@@ -257,16 +262,11 @@ class CbisCnn(CNNFtExtract):
             nn.MaxPool2d(2, 2),
             nn.BatchNorm2d(32),
 			nn.Dropout(0.2),
-            nn.Conv2d(32, 64, (3, 3), padding=1),
-            nn.GELU(),
-            nn.MaxPool2d(2, 2),
-            nn.BatchNorm2d(64),
-			nn.Dropout(0.2),
-            nn.Conv2d(64, 128, (3, 3), padding=1),
-            nn.GELU(),
-            nn.MaxPool2d(2, 2),
-            nn.BatchNorm2d(128),
-			nn.Dropout(0.2),
+            # nn.Conv2d(32, 64, (3, 3), padding=1),
+            # nn.GELU(),
+            # nn.MaxPool2d(2, 2),
+            # nn.BatchNorm2d(64),
+			# nn.Dropout(0.2),
             nn.Flatten(1, -1),
         )
 
