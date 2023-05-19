@@ -247,12 +247,7 @@ class CbisCnn(CNNFtExtract):
         # summary(self.model, (1, f, f))
 
         self.__seq_conv = nn.Sequential(
-            nn.Conv2d(1, 8, (3, 3), padding=1),
-            nn.GELU(),
-            nn.MaxPool2d(2, 2),
-            nn.BatchNorm2d(8),
-			nn.Dropout(0.2),
-            nn.Conv2d(8, 16, (3, 3), padding=1),
+			nn.Conv2d(1, 16, (3, 3), padding=1),
             nn.GELU(),
             nn.MaxPool2d(2, 2),
             nn.BatchNorm2d(16),
@@ -262,11 +257,16 @@ class CbisCnn(CNNFtExtract):
             nn.MaxPool2d(2, 2),
             nn.BatchNorm2d(32),
 			nn.Dropout(0.2),
-            # nn.Conv2d(32, 64, (3, 3), padding=1),
-            # nn.GELU(),
-            # nn.MaxPool2d(2, 2),
-            # nn.BatchNorm2d(64),
-			# nn.Dropout(0.2),
+            nn.Conv2d(32, 64, (3, 3), padding=1),
+            nn.GELU(),
+            nn.MaxPool2d(2, 2),
+            nn.BatchNorm2d(64),
+			nn.Dropout(0.2),
+            nn.Conv2d(64, 128, (3, 3), padding=1),
+            nn.GELU(),
+            nn.MaxPool2d(2, 2),
+            nn.BatchNorm2d(128),
+			nn.Dropout(0.2),
             nn.Flatten(1, -1),
         )
 
