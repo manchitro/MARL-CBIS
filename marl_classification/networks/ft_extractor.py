@@ -230,7 +230,7 @@ class CbisCnn(CNNFtExtract):
     def __init__(self, f: int) -> None:
         super().__init__()
 
-        self.__out_size = 32 * (f // 8) ** 2
+        self.__out_size = 128 * (f // 16) ** 2
 
         # resnet18
         # self.model = ModifiedResNet18()
